@@ -45,3 +45,45 @@ Also, [Vicuna](https://vicuna.lmsys.org/), [Bing](https://learn.microsoft.com/en
     abstract = "Large Language Models (LLMs) play powerful, black-box readers in the retrieve-then-read pipeline, making remarkable progress in knowledge-intensive tasks. This work introduces a new framework, Rewrite-Retrieve-Read instead of the previous retrieve-then-read for the retrieval-augmented LLMs from the perspective of the query rewriting. Unlike prior studies focusing on adapting either the retriever or the reader, our approach pays attention to the adaptation of the search query itself, for there is inevitably a gap between the input text and the needed knowledge in retrieval. We first prompt an LLM to generate the query, then use a web search engine to retrieve contexts. Furthermore, to better align the query to the frozen modules, we propose a trainable scheme for our pipeline. A small language model is adopted as a trainable rewriter to cater to the black-box LLM reader. The rewriter is trained using the feedback of the LLM reader by reinforcement learning. Evaluation is conducted on downstream tasks, open-domain QA and multiple-choice QA. Experiments results show consistent performance improvement, indicating that our framework is proven effective and scalable, and brings a new framework for retrieval-augmented LLM.",
 }
 ```
+
+### Usage
+
+This section describes how to use this project to convert `train.json` and `dev.json` to the query rewriter format.
+
+#### Data Preparation
+
+1.  Place your `train.json` and `dev.json` files in the `datasets/tasks/ambignq` directory.
+2.  Make sure your JSON files are in the JSON Lines format (`.jsonl`), where each line is a valid JSON object. For example:
+
+    ```json
+    {"question": "...", "answer": ["..."]}
+    {"question": "...", "answer": ["..."]}
+    ```
+
+#### Generate Rewritten Queries
+
+Use the `main-llama.py` script with the `rewrite` task to generate rewritten queries.
+
+For the dev set:
+
+```bash
+python generate/main-llama.py --dataset amb --task rewrite --split dev --pid 1 --engine <your_engine>
+```
+
+For the train set:
+
+```bash
+python generate/main-llama.py --dataset amb --task rewrite --split train --pid 1 --engine <your_engine>
+```
+
+Replace `<your_engine>` with the name of the engine you want to use (e.g., `decapoda-research/llama-7b-hf`). The rewritten queries will be saved in the `outputs/rewrite-amb` directory.
+
+#### Training
+
+Once you have generated the rewritten queries, you can train a model using the `train_text_generation.py` script.
+
+```bash
+python rl/RL4LMs/scripts/training/train_text_generation.py --config_path rl/RL4LMs/scripts/training/task_configs/hotpot/t5_ambig_0525_v3.yml
+```
+
+This will use the configuration from `t5_ambig_0525_v3.yml`, which is set up to use the `ambig` datapool. The `ambig` datapool is configured to load data from the `outputs/rewrite-amb` directory.
